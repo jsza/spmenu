@@ -1,5 +1,5 @@
 '''
-Resource loading module for popuplib2.
+Resource loading module for spmenu.
 '''
 import os
 
@@ -8,7 +8,7 @@ import es
 import langlib
 from configobj import ConfigObj
 
-from popuplib2_common import dbgmsg, dbgmsg_repr
+from spmenu_common import dbgmsg, dbgmsg_repr
 
 def load_language_data(module):
     global lang_data
@@ -28,9 +28,9 @@ def get_game_data(module):
     data = load_game_data(module)
     # GJ HAX:
     gamename = str(es.ServerVar('eventscripts_gamedir')).replace('\\', '/').rpartition('/')[2].lower()
-    dbgmsg(1, 'popuplib2: game name is %s'%repr(gamename))
+    dbgmsg(1, 'spmenu: game name is %s'%repr(gamename))
     if gamename not in data:
-        dbgmsg(1, 'popuplib2: game not found, going default')
+        dbgmsg(1, 'spmenu: game not found, going default')
         gamename = 'default'
     this_game = data[gamename]
     game_data = {

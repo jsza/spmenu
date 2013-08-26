@@ -10,8 +10,8 @@ import es
 import gamethread
 import langlib
 
-from popuplib2_common import dbgmsg, dbgmsg_repr
-import popuplib2_resources
+from spmenu_common import dbgmsg, dbgmsg_repr
+import spmenu_resources
 
 
 # UserPopup classes
@@ -34,33 +34,33 @@ class UserPopup(object):
         self._send_args = None
         self._send_kw = None
         self._being_hidden = False
-    
+
     def __del__(self):
         '''
         No references to this userpopup.
         '''
         dbgmsg(1, 'Popuplib2: Deleting userpopup')
         dbgmsg_repr(2, self)
-        
+
     def _send(self, *args, **kw):
         '''Send this popup to queue of the user.'''
         self._send_args = args or ()
         self._send_kw = kw or {}
         self._user.want_popup(self)
-    
+
     def get_language(self):
         '''Get the language for this user popup.'''
         if self._popup.language:
             return self._popup.language
         return self._user.language
-    
+
     def generate_text(self):
         '''
         Generate the string that is to be displayed in the popup.
         '''
         dbgmsg(1, 'Popuplib2: Userpopup building self')
         return '\n'.join(self._popup)
-    
+
     def display(self):
         '''Create a GUI panel and display it for the user.'''
         self._being_hidden = False
@@ -70,11 +70,11 @@ class UserPopup(object):
         dbgmsg(2, 'Popuplib2: Calling es.menu(%s, %s, textlen=%s, %s)'%(
             0, self._user.userid, len(text), self._popup.enable_keys))
         es.menu(0, self._user.userid, text, self._popup.enable_keys)
-    
+
     def response(self, choice):
         '''
         Handle the user input given to this popup.
-        
+
         Returns True if next popup may be shown;
         Returns False otherwise.
         '''
@@ -83,21 +83,21 @@ class UserPopup(object):
             return self._popup._response(self._user, choice)
         else:
             return True
-    
+
     def unsend(self):
         '''Remove this popup from user queue.'''
         return self._user.remove_popup(self)
-    
+
     def hide_display(self):
         '''Remove this popup type from display.'''
         self._being_hidden = True
         # FIXME: FIX ME!
         es.menu(1, self._user.userid, 'Closing...')
-    
+
     def _user_deleted(self):
         '''The user is no longer in game, this popup is not needed anymore.'''
         del self._popup._users[self._userid]
-        
+
     # TODO: more basic userpopup actions
 
 
@@ -121,16 +121,16 @@ class UserTemplatePopup(UserPopup):
 class UserPersonalPopup(UserPopup):
     '''
     A userpopup class for PersonalPopup.
-    
+
     A userpopup is a view to specific Popup, specific to a single user.
     Each user for each popup have their own userpopup instances.
-    
+
     When a PersonalPopup is sent, the assigned callback function is called
     with the userid and an instance of this class as parameters. Editing
     the contents of the instance determines the contents of the popup
     sent to the user. Use the common list methods to edit the contents.
     When the callback is called, the personal contents are always empty.
-    
+
     Attributes:
     menuselect_args -- a dictionary containing extra information that is put
       to the menuselect callback dict
@@ -144,31 +144,31 @@ class UserPersonalPopup(UserPopup):
 
     def __setitem__(self, *args):
         return self._contents.__setitem__(*args)
-    
+
     def __getitem__(self, *args):
         return self._contents.__getitem__(*args)
 
     def __delitem__(self, *args):
         return self._contents.__delitem__(*args)
-    
+
     def append(self, line):
         return self._contents.append(line)
-    
+
     def extend(self, lines):
         return self._contents.extend(lines)
-    
+
     def index(self, *args, **kw):
         return self._contents.index(*args, **kw)
-    
+
     def insert(self, index, line):
         return self._contents.insert(index, line)
-    
+
     def pop(self, *args, **kw):
         return self._contents.pop(*args, **kw)
-    
+
     def remove(self, line):
         return self._contents.remove(line)
-    
+
     def display(self):
         self._contents = []
         try:
@@ -183,7 +183,7 @@ class UserPersonalPopup(UserPopup):
         dbgmsg(2, 'Popuplib2: Calling es.menu(%s, %s, textlen=%s, %s)'%(
             0, self._user.userid, len(text), self._popup.enable_keys))
         es.menu(0, self._user.userid, text, self._popup.enable_keys)
-        
+
 
 class UserPagedMenu(UserPopup):
     '''
@@ -200,7 +200,7 @@ class UserPagedMenu(UserPopup):
     def pages(self):
         '''Count the number of pages in this popup.'''
         return self._popup.pages()
-    
+
     def _add_options(self, tb):
         '''Add options to builder block tb.'''
         minopt = (self.pagenum-1)*self._popup.options_per_page
@@ -210,14 +210,14 @@ class UserPagedMenu(UserPopup):
             tb.append(str(option)%(index+1))
         for i in xrange(self._popup.options_per_page-index-1):
             tb.append(' ')
-    
+
     def _send(self, page=1, *args, **kw):
         '''Send this popup to queue of the user (override for page control).'''
         self.pagenum = self._popup.isvalidpage(page) and page or 1
         self._send_args = args or ()
         self._send_kw = kw or {}
         self._user.want_popup(self)
-    
+
     def display(self):
         '''Create a GUI panel and display it for the user.'''
         pages = self.pages() or 1
@@ -231,7 +231,7 @@ class UserPagedMenu(UserPopup):
         # add separating slashes
         if pages == 0:
             # empty menu
-            tb.append(popuplib2_resources.get_string('empty', language))
+            tb.append(spmenu_resources.get_string('empty', language))
         else:
             # add options
             self._add_options(tb)
@@ -239,8 +239,8 @@ class UserPagedMenu(UserPopup):
             tb.append(' ')
             # add page navigation links
             if pages > 1:
-                s_prev = popuplib2_resources.get_string('prev', language)
-                s_next = popuplib2_resources.get_string('next', language)
+                s_prev = spmenu_resources.get_string('prev', language)
+                s_next = spmenu_resources.get_string('next', language)
                 if self.pagenum == 1:
                     # tb.append('8. %s'%s_prev)
                     tb.append(' ')
@@ -254,19 +254,19 @@ class UserPagedMenu(UserPopup):
             else:
                 tb.append(' ')
                 tb.append(' ')
-        
+
         # add exit button
-        tb.append('0. %s'%popuplib2_resources.get_string('cancel', language))
+        tb.append('0. %s'%spmenu_resources.get_string('cancel', language))
         #display it
         text = '\n'.join(tb)
         dbgmsg(2, 'es.menu(%d, %d, textlen=%d, %s'%(
             0, self._user.userid, len(text), self._popup.enable_keys))
         es.menu(0, self._user.userid, text, self._popup.enable_keys)
-    
+
     def response(self, choice):
         '''
         Handle the user input given to this popup.
-        
+
         Returns True if next popup may be shown;
         Returns False otherwise.
         '''
@@ -320,7 +320,7 @@ class UserPagedList(UserPagedMenu):
         if isinstance(text, MenuOption):
             text = text.text
         return '%s. %s'%(index, text)
-    
+
     def _add_options(self, tb):
         '''Add list items to builder block tb.'''
         minopt = (self.pagenum-1)*self._popup.options_per_page
@@ -331,11 +331,11 @@ class UserPagedList(UserPagedMenu):
         if self.pagenum > 1:
             for i in xrange(self._popup.options_per_page-index-1):
                 tb.append(' ')
-    
+
     def response(self, choice):
         '''
         Handle the user input given to this popup.
-        
+
         Returns True if next popup may be shown;
         Returns False otherwise.
         '''
@@ -365,16 +365,16 @@ class UserPagedList(UserPagedMenu):
 class UserPersonalMenu(UserPagedMenu):
     '''
     A userpopup class for PersonalMenu.
-    
+
     A userpopup is a view to specific Popup, specific to a single user.
     Each user for each popup have their own userpopup instances.
-    
+
     When a PersonalMenu is sent, the assigned callback function is called
     with the userid and an instance of this class as parameters. Editing
     the contents of the instance determines the contents of the menu
     sent to the user. Use the methods add, find and remove.
     When the callback is called, the personal contents are always empty.
-    
+
     Attributes:
     title -- the title of the menu
     description -- the description of the menu
@@ -392,31 +392,31 @@ class UserPersonalMenu(UserPagedMenu):
 
     def __setitem__(self, *args):
         return self._contents.__setitem__(*args)
-    
+
     def __getitem__(self, *args):
         return self._contents.__getitem__(*args)
 
     def __delitem__(self, *args):
         return self._contents.__delitem__(*args)
-    
+
     def add(self, choice, text, selectable=True):
         '''
         Add a new menu option.
-    
+
         Parameters:
         choice -- the value for choice in menuselect dictionary when this
             option is chosen
         text -- the text to show in the menu for this option
         selectable -- (optional) boolean specifying if this option can be
             selected
-        
+
         Return value:
         the MenuOption instance added to the menu
         '''
         opt = MenuOption(choice, text, selectable)
         self._contents.append(opt)
         return opt
-    
+
     def find(self, choice):
         '''
         Find added menu option and return it or None if not found.
@@ -425,7 +425,7 @@ class UserPersonalMenu(UserPagedMenu):
             if opt.choice == choice:
                 return opt
         return None
-    
+
     def remove(self, choice):
         '''
         Find added menu option and remove it, returning it.
@@ -434,14 +434,14 @@ class UserPersonalMenu(UserPagedMenu):
             if opt.choice == choice:
                 return self._contents.pop(index)
         return None
-    
+
     def pages(self):
         '''Count the number of pages in this popup.'''
         full_pages, left_over_options = divmod(
             len(self._popup)+len(self._contents), self._popup.options_per_page
         )
         return full_pages + (1 if left_over_options else 0)
-    
+
     def display(self):
         '''Create a GUI panel and display it for the user.'''
         self._contents = []
@@ -464,7 +464,7 @@ class UserPersonalMenu(UserPagedMenu):
         tb.append('-'*30)
         if pages == 0:
             # empty menu
-            tb.append(popuplib2_resources.get_string('empty', language))
+            tb.append(spmenu_resources.get_string('empty', language))
         else:
             # add options
             minopt = (self.pagenum-1)*self._popup.options_per_page
@@ -478,8 +478,8 @@ class UserPersonalMenu(UserPagedMenu):
             tb.append('-'*30)
             # add page navigation links
             if pages > 1:
-                s_prev = popuplib2_resources.get_string('prev', language)
-                s_next = popuplib2_resources.get_string('next', language)
+                s_prev = spmenu_resources.get_string('prev', language)
+                s_next = spmenu_resources.get_string('next', language)
                 if self.pagenum == 1:
                     tb.append('8. %s'%s_prev)
                 else:
@@ -492,17 +492,17 @@ class UserPersonalMenu(UserPagedMenu):
                 tb.append(' ')
                 tb.append(' ')
         # add exit button
-        tb.append('0. %s'%popuplib2_resources.get_string('cancel', language))
+        tb.append('0. %s'%spmenu_resources.get_string('cancel', language))
         #display it
         text = '\n'.join(tb)
         dbgmsg(2, 'es.menu(%d, %d, textlen=%d, %s'%(
             0, self._user.userid, len(text), self._popup.enable_keys))
         es.menu(0, self._user.userid, text, self._popup.enable_keys)
-    
+
     def response(self, choice):
         '''
         Handle the user input given to this popup.
-        
+
         Returns True if next popup may be shown;
         Returns False otherwise.
         '''
@@ -594,9 +594,9 @@ class Popup(list):
     menuselect_args -- a dictionary containing extra information that is put
       to the menuselect callback dict
     '''
-    
+
     _user_popup_class = UserPopup
-    
+
     # FIXME: add max queue time and max visibility times
     def __init__(self, *args, **kw):
         '''Initialize a new Popup.'''
@@ -608,19 +608,19 @@ class Popup(list):
         self.enable_keys = "0123456789"
         self.menuselect = None
         self.menuselect_args = {}
-    
+
     def _delete(self):
         '''Deletes this popup user information.'''
         self.menuselect = None
         self.menuselect_args = {}
-    
+
     def __del__(self):
         '''
         No references to this popup.
         '''
         dbgmsg(1, 'Popuplib2: Deleting popup')
         dbgmsg_repr(2, self)
-    
+
     def _get_userpopup(self, user):
         '''Return userpopup and create one if necessary.'''
         if user.userid not in self._users:
@@ -629,20 +629,20 @@ class Popup(list):
         else:
             userpopup = self._users[user.userid]
         return userpopup
-    
+
     def _send(self, user, *args, **kw):
         '''Send this popup to _User object.'''
         userpopup = self._get_userpopup(user)
         userpopup._send(*args, **kw)
         return userpopup
-    
+
     def _unsend(self, user):
         '''Remove this popup from _User queue.'''
         if user.userid in self._users:
             userpopup = self._users[user.userid]
             return userpopup.unsend()
         return False
-    
+
     def _response(self, user, choice):
         '''Handle response from a user.'''
         if callable(self.menuselect):
@@ -670,12 +670,12 @@ class Popup(list):
                     dbgmsg(0, 'Popuplib2: got non-popup return value from callback function')
                     dbgmsg_repr(0, submenu)
         return True
-    
+
     def send(self, userid, *args, **kw):
         '''Send this popup to user specified by userid.'''
         user = _usermanager[userid]
         return self._send(user, *args, **kw)
-    
+
     def unsend(self, userid):
         '''
         Remove this popup from user queue.
@@ -701,7 +701,7 @@ class Popup(list):
             return user.queue.index(userpopup)
         except ValueError:
             return None
-    
+
     # TODO: more basic popup actions
 
 
@@ -721,14 +721,14 @@ class TemplatePopup(Popup):
     menuselect_args -- a dictionary containing extra information that is put
       to the menuselect callback dict
     '''
-    
+
     _user_popup_class = UserTemplatePopup
 
 
 class PersonalPopup(Popup):
     '''
     Callback-based dynamically created popup.
-    
+
     The constructor parameter build_callback must be a function that accepts
     two parameters: (userid, userpopup)
     The userid parameter will contain the userid for which the popup is being
@@ -736,7 +736,7 @@ class PersonalPopup(Popup):
     modified to make the content correct. Additional parameters and keywords
     are as given to the send() method. See UserPersonalPopup documentation
     for further information.
-    
+
     Attributes:
     language -- the abbreviated language for automatically created content,
       filled automatically if added to PopupGroup
@@ -751,12 +751,12 @@ class PersonalPopup(Popup):
     '''
 
     _user_popup_class = UserPersonalPopup
-    
+
     def __init__(self, build_callback, *args, **kw):
         '''Initialize a new PersonalPopup.'''
         super(PersonalPopup, self).__init__(*args, **kw)
         self.build_callback = build_callback
-    
+
     def _send(self, user, *args, **kw):
         '''Send this popup to _User object.'''
         userpopup = self._get_userpopup(user)
@@ -769,7 +769,7 @@ class PersonalPopup(Popup):
 class PagedMenu(Popup):
     '''
     A paged menu popup.
-    
+
     Attributes:
     language -- the abbreviated language for automatically created content,
       filled automatically if added to PopupGroup
@@ -784,9 +784,9 @@ class PagedMenu(Popup):
     description -- the description of the menu
     call_special -- bool, will menuselect be called with non-choice inputs too
     '''
-    
+
     _user_popup_class = UserPagedMenu
-    
+
     def __init__(self, *args, **kw):
         '''Initialize a new PagedMenu.'''
         super(PagedMenu, self).__init__(*args, **kw)
@@ -798,27 +798,27 @@ class PagedMenu(Popup):
         self.description = ''
         self.call_special = False
         self.options_per_page = 7 # do not change, or at least don't increase
-        
+
         self.enable_keys = "0123456789"
-    
+
     def add(self, choice, text, selectable=True):
         '''
         Add a new menu option.
-    
+
         Parameters:
         choice -- the value for choice in menuselect dictionary when this
             option is chosen
         text -- the text to show in the menu for this option
         selectable -- (optional) boolean specifying if this option can be
             selected
-        
+
         Return value:
         the MenuOption instance added to the menu
         '''
         opt = MenuOption(choice, text, selectable)
         self.append(opt)
         return opt
-    
+
     def find(self, choice):
         '''
         Find added menu option and return it or None if not found.
@@ -827,7 +827,7 @@ class PagedMenu(Popup):
             if opt.choice == choice:
                 return opt
         return None
-    
+
     def remove(self, choice):
         '''
         Find added menu option and remove it, returning it.
@@ -836,12 +836,12 @@ class PagedMenu(Popup):
             if opt.choice == choice:
                 return self.pop(index)
         return None
-    
+
     def pages(self):
         '''Count the number of pages in this popup.'''
         full_pages, left_over_options = divmod(len(self), self.options_per_page)
         return full_pages + (1 if left_over_options else 0)
-    
+
     def isvalidpage(self, pagenum):
         '''Check if specified page number is currently valid for this popup.'''
         if not isinstance(pagenum, int):
@@ -863,7 +863,7 @@ class PersonalMenu(PagedMenu):
     modified to make the content correct. Additional parameters and keywords
     are as given to the send() method. See UserPersonalMenu documentation
     for further information.
-    
+
     Attributes:
     language -- the abbreviated language for automatically created content,
       filled automatically if added to PopupGroup
@@ -876,14 +876,14 @@ class PersonalMenu(PagedMenu):
       to the menuselect callback dict
     call_special -- bool, will menuselect be called with non-choice inputs too
     '''
-    
+
     _user_popup_class = UserPersonalMenu
-    
+
     def __init__(self, build_callback, *args, **kw):
         '''Initialize a new PersonalMenu.'''
         super(PersonalMenu, self).__init__(*args, **kw)
         self.build_callback = build_callback
-    
+
     def _send(self, user, *args, **kw):
         '''Send this popup to _User object.'''
         userpopup = self._get_userpopup(user)
@@ -896,7 +896,7 @@ class PersonalMenu(PagedMenu):
 class PagedList(PagedMenu):
     '''
     A paged list popup.
-    
+
     Attributes:
     language -- the abbreviated language for automatically created content,
       filled automatically if added to PopupGroup
@@ -911,9 +911,9 @@ class PagedList(PagedMenu):
     description -- the description of the list
     options_per_page -- the number of items displayed per page (default 10)
     '''
-    
+
     _user_popup_class = UserPagedList
-    
+
     def __init__(self, *args, **kw):
         '''Initialize a new PagedMenu.'''
         super(PagedList, self).__init__(*args, **kw)
